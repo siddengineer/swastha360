@@ -1,0 +1,63 @@
+# ==============================================================================
+# Swasth360 - Render Blueprint (render.yaml)
+# Deploy full-stack: Python AI Service, Spring Boot Backend, React Frontend
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Python FastAPI AI Service
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: swasth360-ai-service
+    env: docker
+    dockerfilePath: ./ai-service/Dockerfile
+    dockerContext: ./ai-service
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+  # ----------------------------------------------------------------------------
+  # 2. Java Spring Boot Backend
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: swasth360-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: APP_JWT_SECRET
+        generateValue: true
+      - key: AI_SERVICE_URL
+        value: http://swasth360-ai-service:8000
+
+  # ----------------------------------------------------------------------------
+  # 3. React Frontend (Static Site)
+  # ----------------------------------------------------------------------------
+  - type: web
+    name: swasth360-frontend
+    env: static
+    plan: free
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_URL
+        sync: false
